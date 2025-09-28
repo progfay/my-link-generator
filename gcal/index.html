@@ -1,0 +1,58 @@
+<script>
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
+    return `${year}${month}${day}`;
+  };
+
+  const transformQuery = (query) =>
+    new URLSearchParams(
+      Object.fromEntries(
+        query.entries().map(([key, value]) => {
+          // https://github.com/InteractionDesignFoundation/add-event-to-calendar-docs/blob/4a1ab4f123881c3841b74da747c6edcc808972c5/services/google.md
+          switch (key) {
+            case "title":
+              // https://github.com/InteractionDesignFoundation/add-event-to-calendar-docs/blob/4a1ab4f123881c3841b74da747c6edcc808972c5/services/google.md#text
+              return ["text", value];
+
+            case "description":
+              // https://github.com/InteractionDesignFoundation/add-event-to-calendar-docs/blob/4a1ab4f123881c3841b74da747c6edcc808972c5/services/google.md#details
+              return ["details", value];
+
+            case "dates":
+              // https://github.com/InteractionDesignFoundation/add-event-to-calendar-docs/blob/4a1ab4f123881c3841b74da747c6edcc808972c5/services/google.md#dates
+              const dates = value.split("/", 2);
+              return [
+                "dates",
+                dates
+                  .map((date) => {
+                    switch (date) {
+                      case "today":
+                        const today = new Date();
+                        return formatDate(today);
+
+                      case "tomorrow":
+                        const tomorrow = new Date(
+                          Date.now() + 24 * 60 * 60 * 1000,
+                        );
+                        return formatDate(tomorrow);
+
+                      default:
+                        return date;
+                    }
+                  })
+                  .join("/"),
+              ];
+
+            default:
+              return [key, value];
+          }
+        }),
+      ),
+    );
+  const query = new URLSearchParams(window.location.search);
+  const url = new URL("/calendar/render", "https://calendar.google.com");
+  url.search = transformQuery(query).toString();
+  window.location.href = url.toString();
+</script>
